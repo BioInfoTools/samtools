@@ -126,6 +126,7 @@ typedef struct {
     int min_mq, flag, min_baseQ, capQ_thres, max_depth, max_indel_depth, fmt_flag, all;
     int rflag_require, rflag_filter;
     int openQ, extQ, tandemQ, min_support; // for indels
+    int max_indels;
     double min_frac; // for indels
     char *reg, *pl_list, *fai_fname, *output_fname;
     faidx_t *fai;
@@ -909,6 +910,7 @@ static void print_usage(FILE *fp, const mplp_conf_t *mplp)
 "  -E, --redo-BAQ          recalculate BAQ on the fly, ignore existing BQs\n"
 "  -f, --fasta-ref FILE    faidx indexed reference sequence file\n"
 "  -G, --exclude-RG FILE   exclude read groups listed in FILE\n"
+"  -i, --max-indels INT    skip alignments with more INDELs than INT, disable:-1 [-1]\n"
 "  -l, --positions FILE    skip unlisted positions (chr pos) or regions (BED)\n"
 "  -q, --min-MQ INT        skip alignments with mapQ smaller than INT [%d]\n", mplp->min_mq);
     fprintf(fp,
@@ -966,6 +968,7 @@ int bam_mpileup(int argc, char *argv[])
     mplp.rflag_filter = BAM_FUNMAP | BAM_FSECONDARY | BAM_FQCFAIL | BAM_FDUP;
     mplp.output_fname = NULL;
     mplp.all = 0;
+    mplp.max_indels = -1;
     sam_global_args_init(&mplp.ga);
 
     static const struct option lopts[] =
@@ -1020,9 +1023,10 @@ int bam_mpileup(int argc, char *argv[])
         {"per-sample-mF", no_argument, NULL, 'p'},
         {"per-sample-mf", no_argument, NULL, 'p'},
         {"platforms", required_argument, NULL, 'P'},
+        {"max-indels", required_argument, NULL, 'i'},
         {NULL, 0, NULL, 0}
     };
-    while ((c = getopt_long(argc, argv, "Agf:r:l:q:Q:uRC:BDSd:L:b:P:po:e:h:Im:F:EG:6OsVvxt:a",lopts,NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "Agf:r:l:q:Q:uRC:BDSd:L:b:P:po:e:h:Im:F:EG:6OsVvxt:ai:",lopts,NULL)) >= 0) {
         switch (c) {
         case 'x': mplp.flag &= ~MPLP_SMART_OVERLAPS; break;
         case  1 :
@@ -1042,6 +1046,7 @@ int bam_mpileup(int argc, char *argv[])
             mplp.fai_fname = optarg;
             break;
         case 'd': mplp.max_depth = atoi(optarg); break;
+        case 'i': mplp.max_indels = atoi(optarg); break;
         case 'r': mplp.reg = strdup(optarg); break;
         case 'l':
                   // In the original version the whole BAM was streamed which is inefficient
