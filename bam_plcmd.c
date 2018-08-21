@@ -284,6 +284,20 @@ static int mplp_func(void *data, bam1_t *b)
         }
         if (b->core.qual < ma->conf->min_mq) skip = 1;
         else if ((ma->conf->flag&MPLP_NO_ORPHAN) && (b->core.flag&BAM_FPAIRED) && !(b->core.flag&BAM_FPROPER_PAIR)) skip = 1;
+        if (ma->conf->max_indels != -1) {
+            uint32_t *cigar;
+            int32_t i, indels_len = 0;
+            for (i = 0, cigar = bam_get_cigar(b); i < b->core.n_cigar; ++i) {
+                char c = bam_cigar_opchr(cigar[i]);
+                if (c == 'I' || c == 'D') { // indels
+                    indels_len += bam_cigar_oplen(cigar[i]);
+                }
+            }
+            if (indels_len >= ma->conf->max_indels) {
+                skip = 1;
+//              fprintf(stderr, "[!]Skip at [%s] for [%i]\n", b->data, indels_len);
+            }
+        }
     } while (skip);
     return ret;
 }
@@ -910,7 +924,7 @@ static void print_usage(FILE *fp, const mplp_conf_t *mplp)
 "  -E, --redo-BAQ          recalculate BAQ on the fly, ignore existing BQs\n"
 "  -f, --fasta-ref FILE    faidx indexed reference sequence file\n"
 "  -G, --exclude-RG FILE   exclude read groups listed in FILE\n"
-"  -i, --max-indels INT    skip alignments with more INDELs than INT, disable:-1 [-1]\n"
+"  -i, --max-indels INT    skip alignments with INDELs more than or equal to INT, disable:-1 [-1]\n"
 "  -l, --positions FILE    skip unlisted positions (chr pos) or regions (BED)\n"
 "  -q, --min-MQ INT        skip alignments with mapQ smaller than INT [%d]\n", mplp->min_mq);
     fprintf(fp,
