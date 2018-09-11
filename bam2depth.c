@@ -62,7 +62,7 @@ static int read_bam(void *data, bam1_t *b) // read level filters better go here 
     {
         ret = aux->iter? sam_itr_next(aux->fp, aux->iter, b) : sam_read1(aux->fp, aux->hdr, b);
         if ( ret<0 ) break;
-        if ( b->core.flag & (BAM_FUNMAP | BAM_FSECONDARY | BAM_FQCFAIL | BAM_FDUP) ) continue;
+        if ( b->core.flag & (BAM_FUNMAP | BAM_FQCFAIL | BAM_FDUP) ) continue;
         if ( (int)b->core.qual < aux->min_mapQ ) continue;
         if ( aux->min_len && bam_cigar2qlen(b->core.n_cigar, bam_get_cigar(b)) < aux->min_len ) continue;
         break;
